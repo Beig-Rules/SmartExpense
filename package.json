@@ -1,0 +1,41 @@
+{
+  "name": "@beig-rules/smart-expense",
+  "version": "1.0.0",
+  "description": "SmartExpense — private web expense tracker (static). Install meta package or run via GitHub Pages / Docker.",
+  "license": "MIT",
+  "author": "Beig (Beig-Rules)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beig-Rules/SmartExpense.git"
+  },
+  "homepage": "https://github.com/Beig-Rules/SmartExpense#readme",
+  "bugs": {
+    "url": "https://github.com/Beig-Rules/SmartExpense/issues"
+  },
+  "keywords": [
+    "expense-tracker",
+    "pwa",
+    "three.js",
+    "chart.js",
+    "localstorage",
+    "beig-rules"
+  ],
+  "files": [
+    "index.html",
+    "css/**/*",
+    "js/**/*",
+    "manifest.json",
+    "sw.js",
+    "README.md",
+    "SECURITY.md",
+    "Dockerfile",
+    "nginx.conf"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
