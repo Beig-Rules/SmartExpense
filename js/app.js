@@ -34,13 +34,13 @@
 
   function escapeHtml(s) {
     return String(s)
-      .replace(/&/g, "&")
-      .replace(/</g, "<")
-      .replace(/>/g, ">")
-      .replace(/"/g, """);
+      .replace(/&/g, "&" + "amp;")
+      .replace(/</g, "&" + "lt;")
+      .replace(/>/g, "&" + "gt;")
+      .replace(/"/g, "&" + "quot;");
   }
   function escapeAttr(s) {
-    return escapeHtml(s).replace(/'/g, "&#39;");
+    return escapeHtml(s).replace(/'/g, "&#" + "39;");
   }
 
   function refreshMonthFilter() {
