@@ -4,12 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SmartExpense | ردیاب هوشمند هزینه</title>
-  <meta name="description" content="ردیاب هوشمند هزینه — تحت وب، بدون نصب، خروجی اکسل/PDF، پیشنهاد و قفل اختیاری" />
+  <meta name="description" content="ردیاب هوشمند هزینه — نمودار سه‌بعدی Three.js، خروجی اکسل/PDF، قفل و تم" />
   <meta name="theme-color" content="#0c1222" id="meta-theme" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
@@ -110,8 +111,23 @@
         </section>
       </div>
 
+      <section class="card" id="dashboard-3d">
+        <h2>🍬 نمودار سه‌بعدی (Three.js)</h2>
+        <p class="muted-p">چرخش خودکار · متریال براق آبنباتی · WebGL</p>
+        <div class="charts charts-3d">
+          <div class="chart-box chart-box-3d">
+            <h3>سهم دسته‌ها — ۳D</h3>
+            <div id="chart3d-pie" class="three-host"></div>
+          </div>
+          <div class="chart-box chart-box-3d">
+            <h3>روند ماهانه — ۳D</h3>
+            <div id="chart3d-bar" class="three-host"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="card" id="dashboard">
-        <h2>📊 نمودارهای رنگی</h2>
+        <h2>📊 نمودار کلاسیک (Chart.js)</h2>
         <div class="charts">
           <div class="chart-box">
             <h3>سهم دسته‌ها</h3>
@@ -177,7 +193,7 @@
     </main>
 
     <footer class="footer">
-      <span>SmartExpense — زیبا، سریع، خصوصی</span>
+      <span>SmartExpense — Three.js · Chart.js · خصوصی</span>
       <a href="https://github.com/Beig-Rules/SmartExpense" target="_blank" rel="noopener">GitHub</a>
     </footer>
   </div>
@@ -205,6 +221,7 @@
   <script src="js/storage.js"></script>
   <script src="js/suggestions.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/charts3d.js"></script>
   <script src="js/export.js"></script>
   <script src="js/app.js"></script>
   <script>
