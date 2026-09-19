@@ -1,6 +1,5 @@
 /**
- * SmartExpense — Main application controller
- * Optimized for fast UI updates and minimal reflows.
+ * SmartExpense — Main controller (edit, categories, backup, PIN, performance)
  */
 (() => {
   const $ = (sel) => document.querySelector(sel);
@@ -9,18 +8,40 @@
   let cache = [];
   let filterMonth = "all";
   let filterCategory = "all";
+  let editingId = null;
 
   function todayISO() {
     return new Date().toISOString().slice(0, 10);
   }
 
-  function fillCategories() {
+  function fillCategorySelects() {
     const cats = Storage.getCategories();
-    const opts = cats.map((c) => `<option value="${c}">${c}</option>`).join("");
+    const opts = cats.map((c) => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
     $("#f-category").innerHTML = opts;
     $("#sim-category").innerHTML = opts;
+    $("#edit-category").innerHTML = opts;
     $("#filter-category").innerHTML =
       `<option value="all">همه دسته‌ها</option>` + opts;
+    const list = $("#cat-list");
+    if (list) {
+      list.innerHTML = cats
+        .map(
+          (c) =>
+            `<li><span>${escapeHtml(c)}</span><button type="button" class="btn-danger" data-rm-cat="${escapeAttr(c)}">×</button></li>`
+        )
+        .join("");
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, "&#39;");
   }
 
   function refreshMonthFilter() {
@@ -68,9 +89,8 @@
       const pct = Math.min(100, (monthTotal / budget) * 100);
       const fill = $("#budget-fill");
       fill.style.width = pct + "%";
-      fill.classList.remove("warn", "danger");
-      if (pct >= 100) fill.classList.add("danger");
-      else if (pct >= 80) fill.classList.add("warn");
+      fill.classList.toggle("warn", pct >= 80 && pct < 100);
+      fill.classList.toggle("danger", pct >= 100);
       $("#budget-bar-wrap").classList.remove("hidden");
       $("#budget-text").textContent =
         `${Math.round(pct)}٪ مصرف شده — ${Suggestions.formatMoney(monthTotal)} از ${Suggestions.formatMoney(budget)}`;
@@ -93,11 +113,14 @@
       .map(
         (e) => `
       <tr>
-        <td>${e.date}</td>
-        <td>${e.category}</td>
+        <td>${escapeHtml(e.date)}</td>
+        <td>${escapeHtml(e.category)}</td>
         <td>${Suggestions.formatMoney(e.amount)}</td>
-        <td>${e.note || "—"}</td>
-        <td><button type="button" class="btn-danger" data-del="${e.id}">حذف</button></td>
+        <td>${escapeHtml(e.note || "—")}</td>
+        <td class="row-actions">
+          <button type="button" class="btn-link" data-edit="${escapeAttr(e.id)}">ویرایش</button>
+          <button type="button" class="btn-danger" data-del="${escapeAttr(e.id)}">حذف</button>
+        </td>
       </tr>`
       )
       .join("");
@@ -106,17 +129,41 @@
   function renderSuggestions() {
     const tips = Suggestions.buildTips(cache, Storage.getBudget());
     $("#suggestions").innerHTML = tips
-      .map((t) => `<div class="tip ${t.type || ""}">${t.text}</div>`)
+      .map((t) => `<div class="tip ${t.type || ""}">${escapeHtml(t.text)}</div>`)
       .join("");
   }
 
   function refreshAll() {
     cache = Storage.getExpenses();
+    fillCategorySelects();
     refreshMonthFilter();
     renderKPIs();
     renderTable();
     renderSuggestions();
     Charts.update(cache);
+  }
+
+  function openEdit(id) {
+    const item = cache.find((e) => e.id === id);
+    if (!item) return;
+    editingId = id;
+    $("#edit-date").value = item.date;
+    $("#edit-amount").value = item.amount;
+    $("#edit-category").value = item.category;
+    $("#edit-note").value = item.note || "";
+    $("#edit-modal").classList.remove("hidden");
+  }
+
+  function closeEdit() {
+    editingId = null;
+    $("#edit-modal").classList.add("hidden");
+  }
+
+  function showLockScreen(show) {
+    const el = $("#lock-screen");
+    if (!el) return;
+    el.classList.toggle("hidden", !show);
+    $("#app-root").classList.toggle("hidden", show);
   }
 
   // ---- Events ----
@@ -148,11 +195,43 @@
   });
 
   $("#expense-table").addEventListener("click", (e) => {
-    const id = e.target.getAttribute("data-del");
-    if (!id) return;
-    if (confirm("این هزینه حذف شود؟")) {
-      Storage.deleteExpense(id);
+    const del = e.target.getAttribute("data-del");
+    const edit = e.target.getAttribute("data-edit");
+    if (del && confirm("این هزینه حذف شود؟")) {
+      Storage.deleteExpense(del);
       refreshAll();
+    }
+    if (edit) openEdit(edit);
+  });
+
+  $("#edit-form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    if (!editingId) return;
+    Storage.updateExpense(editingId, {
+      date: $("#edit-date").value,
+      amount: Number($("#edit-amount").value),
+      category: $("#edit-category").value,
+      note: $("#edit-note").value.trim()
+    });
+    closeEdit();
+    refreshAll();
+  });
+  $("#edit-cancel").addEventListener("click", closeEdit);
+
+  $("#btn-add-cat").addEventListener("click", () => {
+    const name = $("#new-cat").value.trim();
+    if (!name) return;
+    Storage.addCategory(name);
+    $("#new-cat").value = "";
+    fillCategorySelects();
+  });
+
+  $("#cat-list").addEventListener("click", (e) => {
+    const name = e.target.getAttribute("data-rm-cat");
+    if (!name) return;
+    if (confirm("حذف دسته «" + name + "»؟")) {
+      Storage.removeCategory(name);
+      fillCategorySelects();
     }
   });
 
@@ -161,9 +240,7 @@
   });
 
   $("#btn-simulate").addEventListener("click", () => {
-    const cat = $("#sim-category").value;
-    const pct = Number($("#sim-percent").value);
-    const result = Suggestions.simulate(cache, cat, pct);
+    const result = Suggestions.simulate(cache, $("#sim-category").value, Number($("#sim-percent").value));
     const box = $("#sim-result");
     box.classList.remove("hidden");
     box.textContent = result.message;
@@ -171,7 +248,8 @@
 
   // Export menu
   const exportMenu = $("#export-menu");
-  $("#btn-export-menu").addEventListener("click", () => {
+  $("#btn-export-menu").addEventListener("click", (e) => {
+    e.stopPropagation();
     exportMenu.classList.toggle("hidden");
   });
   document.addEventListener("click", (e) => {
@@ -185,13 +263,74 @@
     if (type === "excel") Export.toExcel(list);
     if (type === "pdf") Export.toPDF(list, kpisFor(cache));
     if (type === "image") await Export.toImage("dashboard");
+    if (type === "json") Export.toJSONBackup();
   });
 
-  // Init
+  // Import JSON
+  $("#btn-import-json").addEventListener("click", () => $("#import-file").click());
+  $("#import-file").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const mode = confirm("OK = جایگزینی کامل داده‌ها\nCancel = ادغام با داده‌های فعلی") ? "replace" : "merge";
+      const n = Storage.importBackup(data, mode);
+      alert("وارد شد. تعداد کل هزینه‌ها: " + n);
+      refreshAll();
+    } catch (err) {
+      alert("خطا در خواندن فایل: " + (err.message || "نامعتبر"));
+    }
+  });
+
+  // PIN
+  $("#btn-set-pin").addEventListener("click", async () => {
+    const pin = $("#pin-input").value;
+    try {
+      await Storage.setPin(pin);
+      $("#pin-input").value = "";
+      alert("قفل فعال شد. هنگام بارگذاری مجدد صفحه از شما رمز خواسته می‌شود (اگر قفل کرده باشید).");
+      $("#btn-lock-now").classList.remove("hidden");
+    } catch (err) {
+      alert(err.message || "خطا");
+    }
+  });
+  $("#btn-clear-pin").addEventListener("click", async () => {
+    const pin = $("#pin-input").value;
+    try {
+      await Storage.clearPin(pin);
+      $("#pin-input").value = "";
+      alert("قفل غیرفعال شد");
+      $("#btn-lock-now").classList.add("hidden");
+    } catch (err) {
+      alert(err.message || "خطا");
+    }
+  });
+  $("#btn-lock-now").addEventListener("click", () => {
+    Storage.lock();
+    showLockScreen(true);
+  });
+  $("#btn-unlock").addEventListener("click", async () => {
+    const ok = await Storage.unlock($("#unlock-pin").value);
+    $("#unlock-pin").value = "";
+    if (ok) {
+      showLockScreen(false);
+      refreshAll();
+    } else alert("رمز اشتباه است");
+  });
+
   function init() {
-    fillCategories();
+    if (Storage.hasPin()) {
+      Storage.lock();
+      showLockScreen(true);
+      $("#btn-lock-now").classList.remove("hidden");
+    } else {
+      showLockScreen(false);
+    }
+    fillCategorySelects();
     $("#f-date").value = todayISO();
-    refreshAll();
+    if (!Storage.isLocked()) refreshAll();
   }
 
   if (document.readyState === "loading") {

@@ -1,6 +1,5 @@
 /**
- * SmartExpense — Export Excel / PDF / Image
- * Uses CDN libs when available; degrades gracefully.
+ * SmartExpense — Export helpers
  */
 const Export = (() => {
   function formatMoney(n) {
@@ -25,14 +24,13 @@ const Export = (() => {
   }
 
   function toPDF(expenses, kpis) {
-    if (typeof jspdf === "undefined" && typeof window.jspdf === "undefined") {
+    const lib = window.jspdf || (typeof jspdf !== "undefined" ? jspdf : null);
+    if (!lib) {
       alert("کتابخانه PDF بارگذاری نشده.");
       return;
     }
-    const { jsPDF } = window.jspdf || jspdf;
+    const { jsPDF } = lib;
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-    // Simple LTR summary (jsPDF default fonts lack full Persian shaping)
     doc.setFontSize(16);
     doc.text("SmartExpense Report", 20, 20);
     doc.setFontSize(11);
@@ -42,24 +40,22 @@ const Export = (() => {
       doc.text("Transactions: " + kpis.count, 20, 48);
       doc.text("Daily avg: " + formatMoney(kpis.avg), 20, 56);
     }
-
     let y = 70;
     doc.setFontSize(10);
     doc.text("Date", 20, y);
     doc.text("Category", 50, y);
     doc.text("Amount", 120, y);
     y += 6;
-    expenses.slice(0, 40).forEach((e) => {
+    expenses.slice(0, 50).forEach((e) => {
       if (y > 280) {
         doc.addPage();
         y = 20;
       }
       doc.text(String(e.date), 20, y);
-      doc.text(String(e.category).substring(0, 24), 50, y);
+      doc.text(String(e.category).substring(0, 28), 50, y);
       doc.text(formatMoney(e.amount), 120, y);
       y += 6;
     });
-
     doc.save("SmartExpense-" + new Date().toISOString().slice(0, 10) + ".pdf");
   }
 
@@ -68,11 +64,12 @@ const Export = (() => {
       alert("کتابخانه تصویر بارگذاری نشده.");
       return;
     }
-    const el = document.getElementById(elementId) || document.querySelector(".app");
+    const el = document.getElementById(elementId) || document.querySelector(".main");
     const canvas = await html2canvas(el, {
       backgroundColor: "#0f1419",
       scale: 2,
-      useCORS: true
+      useCORS: true,
+      logging: false
     });
     const link = document.createElement("a");
     link.download = "SmartExpense-dashboard-" + new Date().toISOString().slice(0, 10) + ".png";
@@ -80,5 +77,16 @@ const Export = (() => {
     link.click();
   }
 
-  return { toExcel, toPDF, toImage };
+  function toJSONBackup() {
+    const data = Storage.exportBackup();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "SmartExpense-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return { toExcel, toPDF, toImage, toJSONBackup };
 })();
