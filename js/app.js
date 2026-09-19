@@ -1,5 +1,5 @@
 /**
- * SmartExpense — Main controller (edit, categories, backup, PIN, performance)
+ * SmartExpense — Main controller (edit, categories, backup, PIN, theme, performance)
  */
 (() => {
   const $ = (sel) => document.querySelector(sel);
@@ -35,10 +35,10 @@
 
   function escapeHtml(s) {
     return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+      .replace(/&/g, "&")
+      .replace(/</g, "<")
+      .replace(/>/g, ">")
+      .replace(/"/g, """);
   }
   function escapeAttr(s) {
     return escapeHtml(s).replace(/'/g, "&#39;");
@@ -166,7 +166,20 @@
     $("#app-root").classList.toggle("hidden", show);
   }
 
-  // ---- Events ----
+  function applyTheme(theme) {
+    const t = theme === "light" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", t);
+    try {
+      localStorage.setItem("se_theme", t);
+    } catch (_) {}
+    const btn = $("#btn-theme");
+    if (btn) btn.textContent = t === "light" ? "☀️" : "🌙";
+    const meta = document.getElementById("meta-theme");
+    if (meta) meta.setAttribute("content", t === "light" ? "#f0f4ff" : "#0c1222");
+    if (typeof Charts !== "undefined" && Charts.refreshTheme) Charts.refreshTheme();
+    if (cache && cache.length && !Storage.isLocked()) Charts.update(cache);
+  }
+
   $("#expense-form").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const date = $("#f-date").value;
@@ -246,7 +259,6 @@
     box.textContent = result.message;
   });
 
-  // Export menu
   const exportMenu = $("#export-menu");
   $("#btn-export-menu").addEventListener("click", (e) => {
     e.stopPropagation();
@@ -266,7 +278,6 @@
     if (type === "json") Export.toJSONBackup();
   });
 
-  // Import JSON
   $("#btn-import-json").addEventListener("click", () => $("#import-file").click());
   $("#import-file").addEventListener("change", async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -284,13 +295,12 @@
     }
   });
 
-  // PIN
   $("#btn-set-pin").addEventListener("click", async () => {
     const pin = $("#pin-input").value;
     try {
       await Storage.setPin(pin);
       $("#pin-input").value = "";
-      alert("قفل فعال شد. هنگام بارگذاری مجدد صفحه از شما رمز خواسته می‌شود (اگر قفل کرده باشید).");
+      alert("قفل فعال شد.");
       $("#btn-lock-now").classList.remove("hidden");
     } catch (err) {
       alert(err.message || "خطا");
@@ -320,7 +330,23 @@
     } else alert("رمز اشتباه است");
   });
 
+  const themeBtn = $("#btn-theme");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", () => {
+      const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      applyTheme(cur === "light" ? "dark" : "light");
+    });
+  }
+
   function init() {
+    const saved = (() => {
+      try {
+        return localStorage.getItem("se_theme");
+      } catch (_) {
+        return null;
+      }
+    })();
+    applyTheme(saved === "light" ? "light" : "dark");
     if (Storage.hasPin()) {
       Storage.lock();
       showLockScreen(true);
