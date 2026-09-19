@@ -26,13 +26,10 @@ const Charts3D = (() => {
     return document.documentElement.getAttribute("data-theme") === "light";
   }
 
-  function bgColor() {
-    return isLight() ? 0xf0f4ff : 0x0c1222;
-  }
-
   function disposeScene(bundle) {
     if (!bundle) return;
     cancelAnimationFrame(bundle.raf);
+    if (bundle.idleTimer) clearTimeout(bundle.idleTimer);
     if (bundle.ro) bundle.ro.disconnect();
     if (bundle.controls) bundle.controls.dispose();
     bundle.scene.traverse((obj) => {
@@ -98,9 +95,6 @@ const Charts3D = (() => {
     });
   }
 
-  /**
-   * Annular sector (donut slice) as a closed Shape for ExtrudeGeometry.
-   */
   function donutSliceShape(innerR, outerR, startAngle, endAngle, segments) {
     const shape = new THREE.Shape();
     const seg = Math.max(8, segments);
@@ -128,10 +122,8 @@ const Charts3D = (() => {
       bevelSegments: 4,
       curveSegments: 24
     });
-    // Center geometry in Z so rotation looks natural
     geo.translate(0, 0, -depth / 2);
     const mesh = new THREE.Mesh(geo, candyMaterial(hex));
-    // Slight explode along bisector for candy separation
     const mid = (startAngle + endAngle) / 2;
     const explode = 0.04;
     mesh.position.x = Math.cos(mid) * explode;
@@ -159,14 +151,13 @@ const Charts3D = (() => {
     addLights(scene);
 
     const group = new THREE.Group();
-    // Tilt donut toward camera slightly
     group.rotation.x = -Math.PI / 2.6;
     scene.add(group);
 
     const innerR = 0.85;
     const outerR = 1.85;
     const depth = 0.62;
-    let angle = -Math.PI / 2; // start from top
+    let angle = -Math.PI / 2;
 
     values.forEach((val, i) => {
       const slice = (val / total) * Math.PI * 2;
@@ -174,19 +165,12 @@ const Charts3D = (() => {
         angle += slice;
         return;
       }
-      const mesh = createDonutSliceMesh(
-        innerR,
-        outerR,
-        angle,
-        angle + slice,
-        depth,
-        CANDY[i % CANDY.length]
+      group.add(
+        createDonutSliceMesh(innerR, outerR, angle, angle + slice, depth, CANDY[i % CANDY.length])
       );
-      group.add(mesh);
       angle += slice;
     });
 
-    // Soft ground disc under donut
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(outerR * 1.15, 64),
       new THREE.MeshPhysicalMaterial({
@@ -211,22 +195,22 @@ const Charts3D = (() => {
     controls.autoRotate = true;
     controls.autoRotateSpeed = 1.2;
 
-    // Pause auto-rotate while user interacts
+    const state = { idleTimer: null };
     controls.addEventListener("start", () => {
       controls.autoRotate = false;
     });
-    let idleTimer = null;
     controls.addEventListener("end", () => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
+      clearTimeout(state.idleTimer);
+      state.idleTimer = setTimeout(() => {
         controls.autoRotate = true;
       }, 2500);
     });
 
+    const bundle = { scene, camera, renderer, group, controls, raf: 0, ro: null, idleTimer: null };
     function frame() {
       controls.update();
       renderer.render(scene, camera);
-      pie.raf = requestAnimationFrame(frame);
+      bundle.raf = requestAnimationFrame(frame);
     }
 
     const ro = new ResizeObserver(() => {
@@ -237,8 +221,10 @@ const Charts3D = (() => {
       renderer.setSize(nw, nh);
     });
     ro.observe(container);
+    bundle.ro = ro;
+    bundle.idleTimer = state.idleTimer;
 
-    pie = { scene, camera, renderer, group, controls, raf: 0, ro, idleTimer };
+    pie = bundle;
     pie.raf = requestAnimationFrame(frame);
   }
 
@@ -283,7 +269,6 @@ const Charts3D = (() => {
     const startX = -((n - 1) * gap) / 2;
     values.forEach((val, i) => {
       const height = Math.max(0.2, (val / maxV) * 2.9);
-      // Rounded candy column: cylinder + sphere cap
       const body = new THREE.Mesh(
         new THREE.CylinderGeometry(0.32, 0.36, height, 28),
         candyMaterial(CANDY[i % CANDY.length])
@@ -308,21 +293,23 @@ const Charts3D = (() => {
     controls.target.set(0, 1, 0);
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.9;
+
+    const state = { idleTimer: null };
     controls.addEventListener("start", () => {
       controls.autoRotate = false;
     });
-    let idleTimer = null;
     controls.addEventListener("end", () => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
+      clearTimeout(state.idleTimer);
+      state.idleTimer = setTimeout(() => {
         controls.autoRotate = true;
       }, 2500);
     });
 
+    const bundle = { scene, camera, renderer, group, controls, raf: 0, ro: null, idleTimer: null };
     function frame() {
       controls.update();
       renderer.render(scene, camera);
-      bar.raf = requestAnimationFrame(frame);
+      bundle.raf = requestAnimationFrame(frame);
     }
 
     const ro = new ResizeObserver(() => {
@@ -333,8 +320,9 @@ const Charts3D = (() => {
       renderer.setSize(nw, nh);
     });
     ro.observe(container);
+    bundle.ro = ro;
 
-    bar = { scene, camera, renderer, group, controls, raf: 0, ro, idleTimer };
+    bar = bundle;
     bar.raf = requestAnimationFrame(frame);
   }
 
@@ -350,7 +338,8 @@ const Charts3D = (() => {
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
       byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-      const m = typeof Storage !== "undefined" ? Storage.monthKey(e.date) : String(e.date).slice(0, 7);
+      const m =
+        typeof Storage !== "undefined" ? Storage.monthKey(e.date) : String(e.date).slice(0, 7);
       byMonth[m] = (byMonth[m] || 0) + e.amount;
     }
 
@@ -384,4 +373,5 @@ const Charts3D = (() => {
 })();
 
 window.Charts3D = Charts3D;
+window.dispatchEvent(new CustomEvent("charts3d-ready"));
 export default Charts3D;
