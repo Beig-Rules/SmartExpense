@@ -1,9 +1,8 @@
 /**
- * SmartExpense — Main controller (edit, categories, backup, PIN, theme, performance)
+ * SmartExpense — Main controller (edit, categories, backup, PIN, theme, Three.js)
  */
 (() => {
   const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
 
   let cache = [];
   let filterMonth = "all";
@@ -133,6 +132,13 @@
       .join("");
   }
 
+  function updateCharts() {
+    Charts.update(cache);
+    if (typeof Charts3D !== "undefined" && Charts3D.ready()) {
+      Charts3D.update(cache);
+    }
+  }
+
   function refreshAll() {
     cache = Storage.getExpenses();
     fillCategorySelects();
@@ -140,7 +146,7 @@
     renderKPIs();
     renderTable();
     renderSuggestions();
-    Charts.update(cache);
+    updateCharts();
   }
 
   function openEdit(id) {
@@ -177,7 +183,8 @@
     const meta = document.getElementById("meta-theme");
     if (meta) meta.setAttribute("content", t === "light" ? "#f0f4ff" : "#0c1222");
     if (typeof Charts !== "undefined" && Charts.refreshTheme) Charts.refreshTheme();
-    if (cache && cache.length && !Storage.isLocked()) Charts.update(cache);
+    if (typeof Charts3D !== "undefined" && Charts3D.refreshTheme) Charts3D.refreshTheme();
+    if (!Storage.isLocked()) updateCharts();
   }
 
   $("#expense-form").addEventListener("submit", (ev) => {
@@ -274,7 +281,7 @@
     const list = filtered().length ? filtered() : cache;
     if (type === "excel") Export.toExcel(list);
     if (type === "pdf") Export.toPDF(list, kpisFor(cache));
-    if (type === "image") await Export.toImage("dashboard");
+    if (type === "image") await Export.toImage("dashboard-3d");
     if (type === "json") Export.toJSONBackup();
   });
 
