@@ -9,6 +9,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
@@ -60,10 +63,10 @@
 
     <main class="main">
       <section class="kpi-grid" id="kpi-cards">
-        <div class="kpi"><span class="kpi-label">مجموع این ماه</span><strong id="kpi-month">۰</strong></div>
-        <div class="kpi"><span class="kpi-label">تعداد تراکنش</span><strong id="kpi-count">۰</strong></div>
-        <div class="kpi"><span class="kpi-label">میانگین روزانه</span><strong id="kpi-avg">۰</strong></div>
-        <div class="kpi"><span class="kpi-label">بودجه ماه</span><strong id="kpi-budget">—</strong></div>
+        <div class="kpi"><span class="kpi-label">مجموع این ماه</span><strong id="kpi-month" class="num">۰</strong></div>
+        <div class="kpi"><span class="kpi-label">تعداد تراکنش</span><strong id="kpi-count" class="num">۰</strong></div>
+        <div class="kpi"><span class="kpi-label">میانگین روزانه</span><strong id="kpi-avg" class="num">۰</strong></div>
+        <div class="kpi"><span class="kpi-label">بودجه ماه</span><strong id="kpi-budget" class="num">—</strong></div>
       </section>
 
       <div class="grid-2">
@@ -72,7 +75,7 @@
           <form id="expense-form">
             <div class="form-row">
               <label>تاریخ<input type="date" id="f-date" required /></label>
-              <label>مبلغ (تومان)<input type="number" id="f-amount" min="1" step="1000" required placeholder="مثلاً ۵۰۰۰۰" /></label>
+              <label>مبلغ (تومان)<input type="number" id="f-amount" class="num" min="1" step="1000" required placeholder="مثلاً ۵۰۰۰۰" /></label>
             </div>
             <div class="form-row">
               <label>دسته‌بندی<select id="f-category"></select></label>
@@ -84,7 +87,7 @@
           <h3>بودجه ماهانه</h3>
           <div class="form-row">
             <label>سقف بودجه (تومان)
-              <input type="number" id="budget-input" min="0" step="100000" placeholder="مثلاً ۲۰۰۰۰۰۰۰" />
+              <input type="number" id="budget-input" class="num" min="0" step="100000" placeholder="مثلاً ۲۰۰۰۰۰۰۰" />
             </label>
             <button type="button" id="btn-save-budget" class="btn btn-outline">ذخیره بودجه</button>
           </div>
@@ -103,7 +106,7 @@
             <label>دسته<select id="sim-category"></select></label>
             <label>درصد کاهش
               <input type="range" id="sim-percent" min="5" max="50" step="5" value="20" />
-              <span id="sim-percent-val">۲۰٪</span>
+              <span id="sim-percent-val" class="num">۲۰٪</span>
             </label>
           </div>
           <button type="button" id="btn-simulate" class="btn btn-primary full">محاسبه تأثیر</button>
@@ -204,7 +207,7 @@
       <form id="edit-form">
         <div class="form-row">
           <label>تاریخ<input type="date" id="edit-date" required /></label>
-          <label>مبلغ<input type="number" id="edit-amount" min="1" step="1000" required /></label>
+          <label>مبلغ<input type="number" id="edit-amount" class="num" min="1" step="1000" required /></label>
         </div>
         <div class="form-row">
           <label>دسته<select id="edit-category"></select></label>
