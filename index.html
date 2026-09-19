@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SmartExpense | ردیاب هوشمند هزینه</title>
-  <meta name="description" content="ردیاب هوشمند هزینه — نمودار سه‌بعدی Three.js، خروجی اکسل/PDF، قفل و تم" />
+  <meta name="description" content="ردیاب هوشمند هزینه — نمودار سه‌بعدی Three.js با OrbitControls و دونات ExtrudeGeometry" />
   <meta name="theme-color" content="#0c1222" id="meta-theme" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="manifest.json" />
@@ -13,7 +13,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
@@ -116,10 +123,10 @@
 
       <section class="card" id="dashboard-3d">
         <h2>🍬 نمودار سه‌بعدی (Three.js)</h2>
-        <p class="muted-p">چرخش خودکار · متریال براق آبنباتی · WebGL</p>
+        <p class="muted-p">دونات واقعی ExtrudeGeometry · OrbitControls: درگ برای چرخش، اسکرول برای زوم · چرخش خودکار بعد از رها کردن</p>
         <div class="charts charts-3d">
           <div class="chart-box chart-box-3d">
-            <h3>سهم دسته‌ها — ۳D</h3>
+            <h3>سهم دسته‌ها — ۳D Donut</h3>
             <div id="chart3d-pie" class="three-host"></div>
           </div>
           <div class="chart-box chart-box-3d">
@@ -196,7 +203,7 @@
     </main>
 
     <footer class="footer">
-      <span>SmartExpense — Three.js · Chart.js · خصوصی</span>
+      <span>SmartExpense — Three.js OrbitControls · ExtrudeGeometry</span>
       <a href="https://github.com/Beig-Rules/SmartExpense" target="_blank" rel="noopener">GitHub</a>
     </footer>
   </div>
@@ -221,12 +228,13 @@
     </div>
   </div>
 
-  <script src="js/storage.js"></script>
-  <script src="js/suggestions.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/charts3d.js"></script>
-  <script src="js/export.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Classic modules first (defer), then ES module charts3d, then app (defer) so Charts3D exists -->
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/suggestions.js"></script>
+  <script defer src="js/charts.js"></script>
+  <script defer src="js/export.js"></script>
+  <script type="module" src="js/charts3d.js"></script>
+  <script defer src="js/app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
