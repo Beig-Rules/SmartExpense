@@ -133,7 +133,7 @@
   }
 
   function updateCharts() {
-    Charts.update(cache);
+    if (typeof Charts !== "undefined") Charts.update(cache);
     if (typeof Charts3D !== "undefined" && Charts3D.ready()) {
       Charts3D.update(cache);
     }
@@ -344,6 +344,10 @@
       applyTheme(cur === "light" ? "dark" : "light");
     });
   }
+
+  window.addEventListener("charts3d-ready", () => {
+    if (!Storage.isLocked()) updateCharts();
+  });
 
   function init() {
     const saved = (() => {
