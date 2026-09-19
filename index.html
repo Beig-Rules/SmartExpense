@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartExpense | ردیاب هوشمند هزینه</title>
+  <meta name="description" content="ردیاب هوشمند هزینه شخصی — کاملاً تحت وب، بدون نصب، با خروجی اکسل و PDF و پیشنهاد هوشمند" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <span class="logo">💰</span>
+        <div>
+          <h1>SmartExpense</h1>
+          <p>ردیاب هوشمند هزینه شخصی</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-export-menu" class="btn btn-outline">خروجی</button>
+        <div id="export-menu" class="dropdown hidden">
+          <button data-export="excel">اکسل (Excel)</button>
+          <button data-export="pdf">PDF</button>
+          <button data-export="image">عکس داشبورد</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- KPI Cards -->
+      <section class="kpi-grid" id="kpi-cards">
+        <div class="kpi"><span class="kpi-label">مجموع این ماه</span><strong id="kpi-month">۰</strong></div>
+        <div class="kpi"><span class="kpi-label">تعداد تراکنش</span><strong id="kpi-count">۰</strong></div>
+        <div class="kpi"><span class="kpi-label">میانگین روزانه</span><strong id="kpi-avg">۰</strong></div>
+        <div class="kpi"><span class="kpi-label">بودجه ماه</span><strong id="kpi-budget">—</strong></div>
+      </section>
+
+      <div class="grid-2">
+        <!-- Add / Budget -->
+        <section class="card">
+          <h2>ثبت هزینه</h2>
+          <form id="expense-form">
+            <div class="form-row">
+              <label>تاریخ<input type="date" id="f-date" required /></label>
+              <label>مبلغ (تومان)<input type="number" id="f-amount" min="1" step="1000" required placeholder="مثلاً ۵۰۰۰۰" /></label>
+            </div>
+            <div class="form-row">
+              <label>دسته‌بندی
+                <select id="f-category"></select>
+              </label>
+              <label>توضیح<input type="text" id="f-note" placeholder="اختیاری" /></label>
+            </div>
+            <button type="submit" class="btn btn-primary full">ثبت هزینه</button>
+          </form>
+
+          <hr />
+          <h3>بودجه ماهانه</h3>
+          <div class="form-row">
+            <label>سقف بودجه (تومان)
+              <input type="number" id="budget-input" min="0" step="100000" placeholder="مثلاً ۲۰۰۰۰۰۰۰" />
+            </label>
+            <button type="button" id="btn-save-budget" class="btn btn-outline">ذخیره بودجه</button>
+          </div>
+          <div id="budget-bar-wrap" class="budget-bar-wrap hidden">
+            <div class="budget-bar"><div id="budget-fill"></div></div>
+            <small id="budget-text"></small>
+          </div>
+        </section>
+
+        <!-- Suggestions & Simulation -->
+        <section class="card">
+          <h2>پیشنهاد و شبیه‌سازی</h2>
+          <div id="suggestions" class="suggestions"></div>
+          <hr />
+          <h3>شبیه‌سازی کاهش هزینه</h3>
+          <div class="form-row">
+            <label>دسته
+              <select id="sim-category"></select>
+            </label>
+            <label>درصد کاهش
+              <input type="range" id="sim-percent" min="5" max="50" step="5" value="20" />
+              <span id="sim-percent-val">۲۰٪</span>
+            </label>
+          </div>
+          <button type="button" id="btn-simulate" class="btn btn-primary full">محاسبه تأثیر</button>
+          <div id="sim-result" class="sim-result hidden"></div>
+        </section>
+      </div>
+
+      <!-- Charts -->
+      <section class="card" id="dashboard">
+        <h2>نمودارها</h2>
+        <div class="charts">
+          <div class="chart-box">
+            <h3>سهم دسته‌ها</h3>
+            <canvas id="chart-pie"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>روند ماهانه</h3>
+            <canvas id="chart-bar"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filters + Table -->
+      <section class="card">
+        <div class="table-header">
+          <h2>لیست هزینه‌ها</h2>
+          <div class="filters">
+            <select id="filter-month"><option value="all">همه ماه‌ها</option></select>
+            <select id="filter-category"><option value="all">همه دسته‌ها</option></select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="expense-table">
+            <thead>
+              <tr>
+                <th>تاریخ</th>
+                <th>دسته</th>
+                <th>مبلغ</th>
+                <th>توضیح</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="empty-state" class="empty hidden">هنوز هزینه‌ای ثبت نشده است.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>SmartExpense — داده‌ها فقط روی دستگاه شما ذخیره می‌شوند</span>
+      <a href="https://github.com/Beig-Rules/SmartExpense" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/suggestions.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
